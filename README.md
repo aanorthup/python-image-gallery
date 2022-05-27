@@ -1,1 +1,1 @@
-# An EC2-based python iamge gallery manager
+# An EC2-based python image gallery manager
