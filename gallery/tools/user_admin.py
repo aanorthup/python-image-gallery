@@ -1,22 +1,14 @@
 import psycopg2
-
-db_host = "image-database.cnfajid7xjkb.us-east-1.rds.amazonaws.com"
-db_name = "image_gallery"
-db_user = "image_gallery"
-
-password_file = "/home/ec2-user/.image_gallery_config"
+import json
+from secrets import get_secret_image_gallery
+from db import *
 
 connection = None
 
-def get_password():
-    f = open(password_file, "r")
-    result = f.readline()
-    f.close()
-    return result[:-1]
-
 def connect():
     global connection
-    connection = psycopg2.connect(host=db_host, dbname=db_name, user=db_user, password=get_password())
+    secret = get_secret()
+    connection = psycopg2.connect(host=get_host(secret), dbname=get_dbname(secret), user=get_username(secret), password=get_password(secret))
 
 def execute(query, args=None):
     global connection
@@ -27,66 +19,10 @@ def execute(query, args=None):
         cursor.execute(query, args)
     return cursor
 
-def list_users():
-    cursor = connection.cursor()
-
-    cursor.execute('select * from users')
-    users = cursor.fetchall()
-
-    columns = [i[0] for i in cursor.description]
-
-    print(columns)
-    print("-------------------------------")
-    for row in users:
-        print(row)
-
-def add_user(user_name, password, full_name):
-    """add user to databse"""
-    cursor = connection.cursor()
-
-    cursor.execute('INSERT INTO users VALUES (%s, %s, %s)', (user_name, password, full_name,))
-
-    connection.commit()
-
-
-def edit_user(user_name, password, full_name):
-    """edit user, refactor later with snazzier way to accept enters"""
-    cursor = connection.cursor()
-
-    if password != "":
-        pw_update = """UPDATE users SET password = %s where username = %s"""
-        cursor.execute(pw_update, (password, user_name))
-        connection.commit()
-
-
-    if full_name != "":
-        fn_update = """UPDATE users SET full_name = %s where username = %s"""
-        cursor.execute(fn_update, (full_name, user_name))
-        connection.commit()
-
-
-
-def delete_user(user_name):
-    """delete user"""
-    cursor = connection.cursor()
-    cursor.execute('DELETE FROM users WHERE username = %s;', (user_name,))
-
-    connection.commit()
-
-def check_for_user(user_name):
-    """check if user is in db?"""
-    cursor = connection.cursor()
-
-    cursor.execute('SELECT COUNT(*) FROM users WHERE username = %s', [user_name])
-    n, = cursor.fetchone()
-    if n == 1:
-        return True
-
-
-
 def temp_ui():
 
     exit_loop = False
+    connect()
 
     while not exit_loop:
         print("\n 1) List users \n 2) Add user \n 3) Edit user \n 4) Delete user \n 5) Quit")

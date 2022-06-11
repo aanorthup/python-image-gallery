@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Admin</title>
+    <meta charset="utf-8" />
+  </head>
+  <body>
+  <div>Username &nbsp;&nbsp; Full Name</div>
+  <div>----------------------------------</div>
+    {% for user in users %}
+    <p>
+      <a href="/admin/edit_user/{{user.username}}">{{user.username}}</a>&nbsp;&nbsp;
+      {{user.full_name}}&nbsp;&nbsp;
+      <a href="/admin/deleteuser/{{user.username}}" method="get" id="form1">Delete User</a>
+
+    </p>
+    {% endfor %}
+
+
+  <a href="/admin/adduser">Add User</a>
+  </body>
+</html>
