@@ -49,6 +49,20 @@ def execute(query, args=None):
     return cursor
 
 
+def get_user_password(username):
+    global connection
+    connect()
+    cursor = connection.cursor()
+    connection.set_session(autocommit=True)
+
+    cursor.execute('select username, password, full_name from users where username = %s', (username,))
+    row = cursor.fetchone()
+    if row is None:
+        return None
+    else:
+        return row[1]
+
+
 def list_users():
     global connection
     connect()
