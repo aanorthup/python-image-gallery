@@ -2,19 +2,18 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>{{ user }}'s Images</title>
+    <title>Image Gallery</title>
 </head>
 <body>
 
-{% for image in images %}
-	<form action="/delete" method="POST">
-		<li>
-			<a href="{{ image }}"><img src="{{ image }}" style="width: 100%; max-width: 400px;"></a>
-			<form action="/delete" method="POST"/>
-			<input type="hidden" name="image_chosen" value="{{ image }}">
-            <input class="button" type="submit" value="Delete"><br/>
-		</li>
-        {% endfor %}
+<h1>{{ user }}'s Images</h1>
+
+    {% for image in images %}
+	  <figure>
+      <img src="/photos/{{ image.title }}" width="600"/>
+      <figcaption>{{image.title}}</figcaption>
+    </figure><br />
+    {% endfor %}
 
     <br />
     <h2><a href="../">Main Menu</a></h2>

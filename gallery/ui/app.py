@@ -5,7 +5,8 @@ from flask import Flask, flash, request, render_template, redirect, session, url
 from gallery.tools.db import connect, list_users, get_user, add_user, edit_user, delete_user, check_for_user, get_user_password
 from gallery.tools.flask_secret import get_secret_flask_session
 from gallery.tools.image import Image
-from gallery.tools.image_dao import ImageDao
+from gallery.tools.image_dao import ImageDAO
+from gallery.tools.postgres_image_dao import PostgresImageDAO
 from gallery.tools.s3 import *
 
 
@@ -63,65 +64,40 @@ def logout():
    return redirect(url_for('main_menu'))
 
 
-
-@app.route('/upload')
-def upload():
-    return render_template('upload.html')
-
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in file_types
 
-@app.route('/uploaded', methods=['POST'])
-def upload_image():
-    if not check_user():
-        return render_template('login.html')
+
+def get_image_dao():
+    return PostgresImageDAO()
+
+
+@app.route('/upload/<username>', methods=['GET', 'POST'])
+def upload_file(username):
     if request.method == 'POST':
-        username = session.get("username")
-        file = request.files['uploaded']
-        upload_file(file, bucket, username)
-        return redirect("/")
+        # check if the post request has the file part
+        if 'file' not in request.files:
+            flash('No file part')
+            return redirect(request.url)
+        file = request.files['file']
+        # if user does not select file, browser also
+        # submit an empty part without filename
+        if file.filename == '':
+            flash('No selected file')
+            return redirect(request.url)
+        if file and allowed_file(file.filename):
+            if put_object(bucket, file.filename, file):
+                get_image_dao().add_image(Image(file.filename, username))
+            return redirect('/')
     return render_template('upload.html')
 
-
-#@app.route('/upload')
-#def upload():
- #   if session and session['username']:
-  #      return render_template('main_menu.html', user=session['username'])
-   # else:
-    #    return redirect('/login')
-
-
-#@app.route('/view_images/<username>')
-#def viewImages(username):
-#    images = get_image().get_images_by_username(username)
-#    if not images:
-#        return "No Images Available"
-#    return render_template('view_images.html', username=session["username"], images=images)
-
-#@app.route('/view_images')
-#def viewImages():
-#    username = session.get("username")
-#    images = get_images(bucket, username)
-#    return render_template('view_images.html', images=images)
-
-
-@app.route('/view_images', methods=['GET'])
-def view_images():
-        username = session.get("username")
-        images = get_images_by_username(bucket, username)
-        return render_template('view_images.html', images=images, user=session['username'])
-
-
-@app.route('/delete', methods=['POST'])
-def delete_button():
-    if not check_user():
-        return render_template('login.html')
-
-    delete_object(bucket, request.form['image_chosen'])
-    return redirect("/view_images")
-
-
+@app.route('/view_images/<username>')
+def view_images(username):
+    images = get_image_dao().get_images_by_username(username)
+    if not images:
+        return 'No images are currently uploaded! :('
+    return render_template('view_images.html', user=username, images=images)
 
 
 
@@ -189,8 +165,6 @@ def delete_user_confirm(username):
     delete_user(username)
     return redirect('/admin')
 
-def get_image():
-    return ImageDao
 
 def user_helper(users):
     users = []
