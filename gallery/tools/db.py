@@ -1,53 +1,42 @@
 import psycopg2
+import os
 import json
-from .secrets import get_secret_image_gallery
 
 #db_name = "image_gallery"
 #db_user = "image_gallery"
 
 #password_file = "/home/ec2-user/.image_gallery_config"
 
+db_host = os.getenv('PG_HOST')
+db_name = os.getenv('IG_DATABASE')
+db_user = os.getenv('IG_USER')
+
+def get_db_password():
+    file = open(os.getenv('IG_PASSWD_FILE'), 'r')
+    password = file.readline()
+    return password.strip()
+
 connection = None
 
-def get_secret():
-    jsonString = get_secret_image_gallery()
-    return json.loads(jsonString)
+#def get_secret():
+#    jsonString = get_secret_image_gallery()
+#    return json.loads(jsonString)
 
 
-def get_password(secret):
-    return secret['password']
+#def get_password(secret):
+#    return secret['password']
 
 
-def get_host(secret):
-    return secret['host']
+#def get_host(secret):
+#    return secret['host']
 
 
-def get_username(secret):
-    return secret['username']
+#def get_username(secret):
+#    return secret['username']
 
 
-def get_dbname(secret):
-    return secret['database_name']
-
-
-def connect():
-    global connection
-    secret = get_secret()
-    connection = psycopg2.connect(host=get_host(secret), dbname=get_dbname(secret), user=get_username(secret),
-                                  password=get_password(secret))
-
-
-def execute(query, args=None):
-    global connection
-    connect()
-    cursor = connection.cursor()
-    connection.set_session(autocommit=True)
-    if not args:
-        cursor.execute(query)
-    else:
-        cursor.execute(query, args)
-    return cursor
-
+#def get_dbname(secret):
+#    return secret['database_name']
 
 def get_user_password(username):
     global connection
@@ -61,6 +50,25 @@ def get_user_password(username):
         return None
     else:
         return row[1]
+
+
+def connect():
+    global connection
+    secret = get_secret()
+    connection = psycopg2.connect(host=db_host, dbname=db_name, user=db_user,
+                                  password=get_db_password())
+
+
+def execute(query, args=None):
+    global connection
+    connect()
+    cursor = connection.cursor()
+    connection.set_session(autocommit=True)
+    if not args:
+        cursor.execute(query)
+    else:
+        cursor.execute(query, args)
+    return cursor
 
 
 def list_users():
@@ -112,7 +120,6 @@ def delete_user(user_name):
     cursor.execute('DELETE FROM users WHERE username = %s;', (user_name,))
 
 
-
 def check_for_user(user_name):
     global connection
     connect()
@@ -140,6 +147,16 @@ def check_for_user(user_name):
 #    else:
 #       cursor.execute(query, args)
 #    return cursor
+
+def get_images(user):
+   connect()
+   images = "select file, user, image_id from images where user=(%s)"
+   results = execute(images, (user,))
+   image_list = []
+   for row in results:
+       image = Image(row[0], row[1], row[2])
+       image_list.append(image)
+   return image_list
 
 def main():
     connect()
