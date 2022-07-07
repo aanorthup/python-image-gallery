@@ -12,10 +12,17 @@ from gallery.tools.s3 import *
 
 
 app = Flask(__name__)
-app.secret_key = get_secret_flask_session()
-bucket = "edu.au.cc.aan.image-gallery"
+bucket = os.getenv("S3_IMAGE_BUCKET")
+UPLOAD_FOLDER = bucket
 file_types = {"tif", "jpg", "jpeg", "gif", "png"}
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
+def get_flask_session():
+    file = open(os.getenv('FLASK_SESSION_FILE'), 'r')
+    session = file.readline()
+    return session.strip()
+
+app.secret_key = get_flask_session()
 
 connect()
 
